@@ -31,12 +31,15 @@ class FootballTable(object):
             self.load()
 
     def cache(self):
+        """ Stores the feature space object as a pickle in the corresponding season folder """ 
         self.table.to_pickle(f"{CACHE_DIRECTORY}/{self.season}/{self.name}.pkl")
 
     def load(self):
+        """ Loads a feature space object as a pickle in the corresponding season folder """ 
         self.table = pd.read_pickle(f"{CACHE_DIRECTORY}/{self.season}/{self.name}.pkl")
 
     def build(self):
+        """ Placeholder build function"""
         raise Exception("Override build function")
 
 
@@ -78,6 +81,9 @@ class FootballBoxscoreTable(object):
         self.table = pd.read_pickle(f"{CACHE_DIRECTORY}/{self.season}/{self.name}.pkl")
     
     def query_asof(self, name, date):
+        """ Filters the table to only rows that match the name argument and only rows where the game took place before
+        the date argument. Returns a dataframe of the mean value of each column from the five most recent games. """
+
         out = self.table[self.table.name == name].copy()
         out = out[out['date'] < date].sort_values('date', ascending=True)
         return out.fillna(0).tail(5).mean(numeric_only=True)
@@ -136,6 +142,7 @@ class DefenseTeamTable(FootballBoxscoreTable):
 
     @staticmethod
     def score_pts_allowed(pts):
+        """ Simple lookup function to handle fantasy points related to points allowed by a defense """
         if pts == 0.0:
             return 10.0
         elif pts <= 6:
@@ -284,10 +291,10 @@ class AdvancedRushingTable(FootballBoxscoreTable):
         self.table['name'] = self.table.player.str.upper().str.replace(" ", "")
 
 
-class AdvancedRecievingTable(FootballBoxscoreTable):
+class AdvancedReceivingTable(FootballBoxscoreTable):
     """ Table that stores player-level receiving data. """
     def __init__(self, season, refresh=False, boxscores=None):
-        super(AdvancedRecievingTable, self).__init__("advancedRecieving", season, refresh, boxscores)
+        super(AdvancedReceivingTable, self).__init__("advancedReceiving", season, refresh, boxscores)
 
     def build(self, boxscores):
         """ Takes a list of FootballBoxscore objects, processes data and converts to a dataframe """
