@@ -2,17 +2,26 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn.ensemble import RandomForestRegressor
 from data import FootballTable, OffenseTable, OffenseTeamTable, DefenseTeamTable
-from data import AdvancedPassingTable, AdvancedRushingTable, AdvancedRecievingTable
+from data import AdvancedPassingTable, AdvancedRushingTable, AdvancedReceivingTable
+from config import SEASON_START_DATES
 
 class FootballRandomForestModel(object):
+    """ Primary model training class """
+
     def __init__(self, train):
-        X ,Y ,C = self.parse(train)
+        """
+        Required Inputs: 
+            train: dataframe of training data
+        """
+        X, Y, C = self.parse(train)
         self.X = X
         self.Y = Y
         self.C = C
 
     @staticmethod
     def parse(data):
+        """ Takes a dataframe. Identifies the training columns, the target column, and the names of the training
+        columns. Returns those as X, Y and C respectively. """
         Y = None
         X = data.fillna(0)
         if 'Y' in X.columns:
@@ -23,31 +32,45 @@ class FootballRandomForestModel(object):
         del X['opp']
         C = X.columns
         X = X.values
-        return X ,Y ,C
+        return X, Y, C
 
     def train(self):
-        self.rfr = RandomForestRegressor(n_estimators=100, max_depth=5, oob_score=True)
+        """ Invokes the fit method of the random forest model. """
+        self.rfr = RandomForestRegressor(n_estimators=100, random_state=0)
         self.rfr.fit(self.X, self.Y)
 
     def predict(self, test):
-        X ,Y ,C = self.parse(test)
+        """ Takes a dataframe. Identifies the training columns, the target column, and the names of the training
+        columns. Generates predictions from the training columns. """
+        X, _, _ = self.parse(test)
         return self.rfr.predict(X)
 
 class QuarterbackFeatureSpaceTable(FootballTable):
-    def __init__(self, refresh=True, feature_space_start=pd.Timestamp("2019.10.15")):
-        self.offense_table = OffenseTable()
-        self.defense_table = DefenseTeamTable()
-        self.adv_passing_table = AdvancedPassingTable()
-        self.feature_space_start = feature_space_start
-        super(QuarterbackFeatureSpaceTable, self).__init__("QuarterbackFeatureSpaceTable", refresh)
+    """ Class for generating feature spaces for quarterbacks. Feature spaces are derived from the OffenseTable, 
+    DefenseTeamTable, and AdvancedPassingTable. """
+
+    def __init__(self, season, refresh=True):
+        self.offense_table = OffenseTable(season)
+        self.defense_table = DefenseTeamTable(season)
+        self.adv_passing_table = AdvancedPassingTable(season)
+        self.feature_space_start = pd.Timestamp(SEASON_START_DATES[season])
+        super(QuarterbackFeatureSpaceTable, self).__init__("QuarterbackFeatureSpaceTable", season, refresh)
 
     def build(self, matchups=None, add_y=True):
+        """ Takes an optional matchups dataframe of player-games to generate feature spaces for. If matchups is not
+        passed a generic dataframe is derived from the offensive table. Takes an optional boolean add_y argument which
+        determines if the target variable should be appended to the feature space. Primarily builds a feature space
+        from the offense_table, defense_table, and adv_passing_table, ensuring that only historic stats from before
+        the game date are used.
+        """
+
         if matchups is None:
             matchups = self.offense_table.table[self.offense_table.table.pass_att > 10].copy()
             matchups = matchups[['name', 'date', 'opp', 'DKScore']]
             matchups = matchups[matchups.date > self.feature_space_start]
+
         records = []
-        for ix, x in tqdm(matchups.iterrows()):
+        for _, x in tqdm(matchups.iterrows()):
             reg = self.offense_table.query_asof(x['name'], x['date'])
             adv = self.adv_passing_table.query_asof(x['name'], x['date'])
             offense_record = pd.concat([reg, adv])
@@ -61,6 +84,7 @@ class QuarterbackFeatureSpaceTable(FootballTable):
                 .sort_values('index', ascending=False)
             records.append(full_rec)
         self.table = pd.concat(records, axis=1).T
+
         if add_y:
             self.table['Y'] = matchups['DKScore'].values
         self.table['name'] = matchups['name'].values
@@ -69,21 +93,32 @@ class QuarterbackFeatureSpaceTable(FootballTable):
 
 
 class PositionPlayerFeatureSpaceTable(FootballTable):
-    def __init__(self, refresh=True, feature_space_start=pd.Timestamp("2019.10.15")):
-        self.offense_table = OffenseTable()
-        self.defense_table = DefenseTeamTable()
-        self.adv_rush_table = AdvancedRushingTable()
-        self.adv_recv_table = AdvancedRecievingTable()
-        self.feature_space_start = feature_space_start
-        super(PositionPlayerFeatureSpaceTable, self).__init__("PositionPlayerFeatureSpaceTable", refresh)
+    """ Class for generating feature spaces for position players. Feature spaces are derived from the OffenseTable, 
+    DefenseTeamTable, AdvancedRushingTable and AdvancedReceivingTable. """
+
+    def __init__(self, season, refresh=True):
+        self.offense_table = OffenseTable(season)
+        self.defense_table = DefenseTeamTable(season)
+        self.adv_rush_table = AdvancedRushingTable(season)
+        self.adv_recv_table = AdvancedReceivingTable(season)
+        self.feature_space_start = pd.Timestamp(SEASON_START_DATES[season])
+        super(PositionPlayerFeatureSpaceTable, self).__init__("PositionPlayerFeatureSpaceTable", season, refresh)
 
     def build(self, matchups=None, add_y=True):
+        """ Takes an optional matchups dataframe of player-games to generate feature spaces for. If matchups is not
+        passed a generic dataframe is derived from the offensive table. Takes an optional boolean add_y argument which
+        determines if the target variable should be appended to the feature space. Primarily builds a feature space
+        from the offense_table, defense_table, adv_rush_table, and adv_recv_table, ensuring that only historic stats 
+        from before the game date are used.
+        """
+
         if matchups is None:
             matchups = self.offense_table.table[self.offense_table.table.pass_att <= 1].copy()
             matchups = matchups[['name', 'date', 'opp', 'DKScore']]
             matchups = matchups[matchups.date > self.feature_space_start]
         records = []
-        for ix, x in tqdm(matchups.iterrows()):
+
+        for _, x in tqdm(matchups.iterrows()):
             reg = self.offense_table.query_asof(x['name'], x['date'])
             adv_rush = self.adv_rush_table.query_asof(x['name'], x['date'])
             adv_recv = self.adv_recv_table.query_asof(x['name'], x['date'])
@@ -97,6 +132,7 @@ class PositionPlayerFeatureSpaceTable(FootballTable):
                 .set_index('index') \
                 .sort_values('index', ascending=False)
             records.append(full_rec)
+
         self.table = pd.concat(records, axis=1).T
         if add_y:
             self.table['Y'] = matchups['DKScore'].values
@@ -106,19 +142,28 @@ class PositionPlayerFeatureSpaceTable(FootballTable):
 
 
 class DefenseFeatureSpaceTable(FootballTable):
-    def __init__(self, refresh=True, feature_space_start=pd.Timestamp("2019.10.15")):
-        self.offense_table = OffenseTeamTable()
-        self.defense_table = DefenseTeamTable()
-        self.feature_space_start = feature_space_start
-        super(DefenseFeatureSpaceTable, self).__init__("DefenseFeatureSpaceTable", refresh)
+    def __init__(self, season, refresh=True,):
+        """ Class for generating feature spaces for a team's defence. Feature spaces are derived from the 
+        OffenseTeamTable, and DefenseTeamTable. """
+        self.offense_table = OffenseTeamTable(season)
+        self.defense_table = DefenseTeamTable(season)
+        self.feature_space_start = pd.Timestamp(SEASON_START_DATES[season])
+        super(DefenseFeatureSpaceTable, self).__init__("DefenseFeatureSpaceTable", season, refresh)
 
     def build(self, matchups=None, add_y=True):
+        """ Takes an optional matchups dataframe of player-games to generate feature spaces for. If matchups is not
+        passed a generic dataframe is derived from the offensive table. Takes an optional boolean add_y argument which
+        determines if the target variable should be appended to the feature space. Primarily builds a feature space
+        from the offense_table, and defense_table.
+        """
+
         if matchups is None:
             matchups = self.defense_table.table.copy()
             matchups = matchups[['name', 'date', 'opp', 'DKScore']]
             matchups = matchups[matchups.date > self.feature_space_start]
+
         records = []
-        for ix, x in tqdm(matchups.iterrows()):
+        for _, x in tqdm(matchups.iterrows()):
             team_defense_record = self.defense_table.query_asof(x['name'], x['date'])
             opp_offense_record = self.offense_table.query_asof(x['opp'], x['date'])
             team_defense_record.index = ["teamDef_" + i for i in team_defense_record.index]
@@ -130,6 +175,7 @@ class DefenseFeatureSpaceTable(FootballTable):
                 .sort_values('index', ascending=False)
             records.append(full_rec)
         self.table = pd.concat(records, axis=1).T
+
         if add_y:
             self.table['Y'] = matchups['DKScore'].values
         self.table['name'] = matchups['name'].values
