@@ -2,15 +2,16 @@
 This walkthrough accompanies the code in walkthrough.ipynb.
 
 There are 5 steps to go from scratch to running a backtest.
-    1) WEB - Scrape data from the web and store in a FootballBoxscore object
-    2) DATA - Structure data in tables using children of the FootballBoxscoreTable class (ScoreTable, OffenseTable, etc)
-    3) MODEL - From those tables that store observations in time - construct feature space that will be useful to tree-
-        based machine learning model
-    4) SIM - Given only what you know as of a point in time (say Week 7 of the 2020 football season) fit an ML model and 
-        comeup with what our prediction WOULD have been as of that date
-    5) BACKTEST - Using different lineup construction methods (i.e. different "stacking" strategies) determine what our 
-        "optimal" lineups would have been, and then compare the performance of our selected lineups vs. the actual 
-        results of the contest on that date
+
+1) WEB - Scrape data from the web and store in a FootballBoxscore object
+
+2) DATA - Structure data in tables using children of the FootballBoxscoreTable class (ScoreTable, OffenseTable, etc)
+
+3) MODEL - From those tables that store observations in time - construct feature space that will be useful to tree- based machine learning model
+    
+4) SIM - Given only what you know as of a point in time (say Week 7 of the 2020 football season) fit an ML model and comeup with what our prediction WOULD have been as of that date
+        
+5) BACKTEST - Using different lineup construction methods (i.e. different "stacking" strategies) determine what our "optimal" lineups would have been, and then compare the performance of our selected lineups vs. the actual results of the contest on that date
 
 Let's go into each of these in a little more depth. 
 
