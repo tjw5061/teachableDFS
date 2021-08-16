@@ -4,7 +4,7 @@ import numpy as np
 
 from tqdm import tqdm
 
-from config import CACHE_DIRECTORY
+from config import CACHE_DIRECTORY, DailyFantasyDataScienceError
 from maps import team_map_inv
 
 
@@ -30,13 +30,18 @@ class FootballTable(object):
             self.load()
 
     def cache(self):
-        """ Stores the feature space object as a pickle in the corresponding season folder """ 
-        self.table.to_pickle(f"{CACHE_DIRECTORY}/{self.name}.pkl")
+        """ Stores the feature space object as a pickle in the corresponding season folder """
+        try:
+            self.table.to_pickle(f"{CACHE_DIRECTORY}/{self.name}.pkl")
+        except FileNotFoundError:
+            raise DailyFantasyDataScienceError()
 
     def load(self):
         """ Loads a feature space object as a pickle in the corresponding season folder """
-        self.table = pd.read_pickle(f"{CACHE_DIRECTORY}/{self.name}.pkl")
-        
+        try:
+            self.table = pd.read_pickle(f"{CACHE_DIRECTORY}/{self.name}.pkl")
+        except FileNotFoundError:
+            raise DailyFantasyDataScienceError()
 
     def build(self):
         """ Placeholder build function"""
@@ -72,11 +77,17 @@ class ReferenceTable(object):
 
     def cache(self):
         """ Stores the reference object as a pickle in the corresponding season folder """ 
-        self.table.to_pickle(f"{CACHE_DIRECTORY}/{self.name}.pkl")
+        try:
+            self.table.to_pickle(f"{CACHE_DIRECTORY}/{self.name}.pkl")
+        except FileNotFoundError:
+            raise DailyFantasyDataScienceError()
 
     def load(self):
         """ Loads a reference object as a pickle in the corresponding season folder """ 
-        self.table = pd.read_pickle(f"{CACHE_DIRECTORY}/{self.name}.pkl")
+        try:
+            self.table = pd.read_pickle(f"{CACHE_DIRECTORY}/{self.name}.pkl")
+        except FileNotFoundError:
+            raise DailyFantasyDataScienceError()
 
     def build(self):
         """ Placeholder build function"""
@@ -114,11 +125,17 @@ class FootballBoxscoreTable(object):
         """ Stores the table object as a pickle in the corresponding season folder """ 
         if not os.path.exists(f"{CACHE_DIRECTORY}/{self.season}"):
             os.makedirs(f"{CACHE_DIRECTORY}/{self.season}")
-        self.table.to_pickle(f"{CACHE_DIRECTORY}/{self.season}/{self.name}.pkl")
+        try:  
+            self.table.to_pickle(f"{CACHE_DIRECTORY}/{self.season}/{self.name}.pkl")
+        except FileNotFoundError:
+            raise DailyFantasyDataScienceError()
 
     def load(self):
-        """ loads the table object from a pickle in the corresponding season folder """ 
-        self.table = pd.read_pickle(f"{CACHE_DIRECTORY}/{self.season}/{self.name}.pkl")
+        """ loads the table object from a pickle in the corresponding season folder """
+        try:
+            self.table = pd.read_pickle(f"{CACHE_DIRECTORY}/{self.season}/{self.name}.pkl")
+        except FileNotFoundError:
+            raise DailyFantasyDataScienceError()
 
 
 class DefenseTeamTable(FootballBoxscoreTable):
