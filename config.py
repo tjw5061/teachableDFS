@@ -1,4 +1,3 @@
-import Exception
 import os
 from os.path import expanduser
 
