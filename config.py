@@ -1,7 +1,7 @@
 import os
 from os.path import expanduser
 
-PROJECT_DIRECTORY =  os.path.join(expanduser("~"), "teachdfs")
+PROJECT_DIRECTORY =  os.path.join(expanduser("~"), "teachableDFS")
 CACHE_DIRECTORY = os.path.join(PROJECT_DIRECTORY, "cache/database")
 
 SEASON_START_DATES = {
