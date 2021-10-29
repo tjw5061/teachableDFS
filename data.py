@@ -333,7 +333,7 @@ class AdvancedRushingTable(FootballBoxscoreTable):
         """ Takes a list of FootballBoxscore objects, processes data and converts to a dataframe """
         table = []
         for fbs in tqdm(boxscores):
-            t = floatify(fbs.adv_player_passing.copy())
+            t = floatify(fbs.adv_player_rushing.copy())
             t['date'] = pd.Timestamp(fbs.scorebox['date'])
             table.append(t)
         self.table = pd.concat(table)
@@ -349,7 +349,7 @@ class AdvancedReceivingTable(FootballBoxscoreTable):
         """ Takes a list of FootballBoxscore objects, processes data and converts to a dataframe """
         table = []
         for fbs in tqdm(boxscores):
-            t = floatify(fbs.adv_player_passing.copy())
+            t = floatify(fbs.adv_player_receive.copy())
             t['date'] = pd.Timestamp(fbs.scorebox['date'])
             table.append(t)
         self.table = pd.concat(table)
